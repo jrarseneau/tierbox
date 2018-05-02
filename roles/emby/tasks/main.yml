@@ -65,7 +65,7 @@
       - "{{dirs.data}}/emby:/config"
       - "{{dirs.media}}:/media:ro"
       - "{{dirs.media}}/recordings:/recordings:rw"
-      - "{{dirs.data}}/iptv-data:/iptv-data"
+      - "{{dirs.data}}/iptv:/iptv"
       - "/tmp:/tmp"
 #    devices: "{{ '/dev/dri:/dev/dri' if dev_dri.stat.exists == True | default(false) else omit }}"
     restart_policy: always
