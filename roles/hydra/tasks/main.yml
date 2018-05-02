@@ -1,0 +1,48 @@
+---
+# NZBHydra Role
+- name: "Get {{user}} uid"
+  shell: "id -u {{user}}"
+  register: uid
+
+- name: "Get {{user}} gid"
+  shell: "id -g {{user}}"
+  register: gid
+
+- name: Stop and remove any existing container
+  docker_container:
+    name: nzbhydra
+    state: absent
+
+- name: Create nzbhydra directories
+  file: "path={{item}} state=directory mode=0775 owner={{user}} group={{user}}"
+  with_items:
+    - "{{dirs.data}}/nzbhydra"
+
+- name: Create and start container
+  docker_container:
+    name: nzbhydra
+    image: hotio/suitarr
+    pull: yes
+    published_ports:
+      - "5075:5075/tcp"
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    env:
+      APP: "nzbhydra"
+      VERSION: "unstable"
+      BACKUP: "no"
+      PUID: "{{uid.stdout}}"
+      PGID: "{{gid.stdout}}"
+      VIRTUAL_HOST: "nzbhydra.{{domain}}"
+      VIRTUAL_PORT: 5075
+      LETSENCRYPT_HOST: "nzbhydra.{{domain}}"
+      LETSENCRYPT_EMAIL: "{{email}}"
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "{{dirs.data}}/nzbhydra:/config"
+    restart_policy: always
+    networks:
+      - name: tierbox
+        aliases:
+          - nzbhydra
+    state: started

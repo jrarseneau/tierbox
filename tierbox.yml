@@ -1,0 +1,33 @@
+---
+- hosts: all
+  vars:
+    ansible_python_interpreter: "/usr/bin/python3"
+  vars_files:
+    - settings.yml
+  become: yes
+  roles:
+    - { role: sanity_check }
+    - { role: kernel, tags: ['kernel'] }
+    - { role: pre_install, tags: ['full', 'proxy', 'feeder', 'plex', 'emby', 'web'] }
+    - { role: system, tags: ['full', 'proxy', 'feeder', 'plex', 'emby', 'web'] }
+    - { role: common, tags: ['full', 'proxy', 'feeder', 'plex', 'emby', 'web'] }
+    - { role: pushover, tags: ['full', 'proxy', 'feeder', 'plex', 'emby', 'web', 'update-pushover']}
+    - { role: docker, tags: ['full', 'proxy', 'feeder', 'plex', 'emby', 'web'] }
+    - { role: rclone, tags: ['full', 'feeder', 'plex', 'emby', 'update-rclone'] }
+    - { role: nginx, tags: ['proxy', 'proxy-test']}
+    - { role: plex, tags: ['full', 'plex', 'update-plex'] }
+    - { role: emby, tags: ['emby', 'update-emby'] }
+    - { role: tautulli, tags: ['full', 'plex'] }
+    - { role: nzbget, tags: ['full', 'feeder'] }
+    - { role: rutorrent, tags: ['full', 'feeder', 'update-rutorrent'] }
+    - { role: hydra, tags: ['full', 'feeder'] }
+    - { role: sonarr, tags: ['full', 'feeder'] }
+    - { role: radarr, tags: ['full', 'feeder'] }
+    - { role: ombi, tags: ['full', 'feeder'] }
+    - { role: unifi, tags: ['unifi'] }
+    - { role: znc, tags: ['znc'] }
+    - { role: iptv, tags: ['iptv']}
+    - { role: backup, tags: ['full', 'proxy', 'feeder', 'plex', 'emby', 'backup'] }
+    - { role: freespace, tags: ['full', 'proxy', 'feeder', 'plex', 'emby', 'backup', 'freespace'] }
+    - { role: watchtower }
+    - { role: glances }

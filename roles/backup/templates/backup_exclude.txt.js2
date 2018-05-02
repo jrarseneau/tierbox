@@ -1,0 +1,25 @@
+tautulli/backups/*
+tautulli/logs/*
+tautulli/cache/*
+nzbget/log/*
+nzbget/queue/*
+nzbget/tmp/*
+sonarr/logs/*
+sonarr/Backups/*
+sonarr/MediaCover/*
+radarr/backups/*
+radarr/backup/*
+radarr/logs/*
+radarr/MediaCover/*
+ombi/BackupSystem/*
+ombi/logs/*
+plex/.bash_history
+plex/transcode/*
+plex/transcodes/*
+plex/Library/Application Support/Plex Media Server/Logs/*
+plex/Library/Application Support/Plex Media Server/Cache/*
+plex/Library/Application Support/Plex Media Server/Crash Reports/*
+plex/Library/Application Support/Plex Media Server/Plug-in Support/Caches/*
+emby/cache/temp/*
+emby/cache/xmltv/*
+emby/data/livetv/recordings/*

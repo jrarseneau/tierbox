@@ -1,0 +1,51 @@
+---
+# Radarr role
+- name: "Get {{user}} uid"
+  shell: "id -u {{user}}"
+  register: uid
+
+- name: "Get {{user}} gid"
+  shell: "id -g {{user}}"
+  register: gid
+
+- name: Stop and remove any existing container
+  docker_container:
+    name: radarr
+    state: absent
+    
+- name: Create radarr directories
+  file: "path={{item}} state=directory mode=0775 owner={{user}} group={{user}}"
+  with_items:
+    - "{{dirs.data}}/radarr"
+
+- name: Create and start container
+  docker_container:
+    name: radarr
+    image: hotio/suitarr
+    pull: yes
+    published_ports:
+      - "7878:7878/tcp"
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    env:
+      APP: "radarr"
+      VERSION: "unstable"
+      PUID: "{{uid.stdout}}"
+      PGID: "{{gid.stdout}}"
+      BACKUP: "no"
+      MONO_TLS_PROVIDER: legacy
+      VIRTUAL_HOST: "radarr.{{domain}}"
+      VIRTUAL_PORT: 7878
+      LETSENCRYPT_HOST: "radarr.{{domain}}"
+      LETSENCRYPT_EMAIL: "{{email}}"
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "{{dirs.data}}/radarr:/config"
+      - "{{dirs.media}}:/media"
+      - "{{dirs.downloads}}:/downloads"
+    networks:
+      - name: tierbox
+        aliases:
+          - radarr
+    restart_policy: always
+    state: started

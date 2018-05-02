@@ -1,0 +1,52 @@
+---
+# Tautulli role
+- name: "Get {{user}} uid"
+  shell: "id -u {{user}}"
+  register: uid
+
+- name: "Get {{user}} gid"
+  shell: "id -g {{user}}"
+  register: gid
+
+- name: Stop and remove any existing container
+  docker_container:
+    name: tautulli
+    state: absent
+
+- name: Wait for Plex Logs folder to be created by Plex
+  wait_for:
+    path: "{{dirs.data}}/plex/Library/Application Support/Plex Media Server/Logs"
+    state: present
+
+- name: Create Tautulli directories
+  file: "path={{item}} state=directory mode=0775 owner={{user}} group={{user}}"
+  with_items:
+    - "{{dirs.data}}/tautulli"
+
+- name: Create and start container
+  docker_container:
+    name: tautulli
+    domainname: tautulli
+    image: linuxserver/tautulli
+    pull: yes
+    published_ports:
+      - "8181:8181/tcp"
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    env:
+      PUID: "{{uid.stdout}}"
+      PGID: "{{gid.stdout}}"
+      VIRTUAL_HOST: "tautulli.{{domain}}"
+      VIRTUAL_PORT: 8181
+      LETSENCRYPT_HOST: "tautulli.{{domain}}"
+      LETSENCRYPT_EMAIL: "{{email}}"
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "{{dirs.data}}/tautulli:/config"
+      - "{{dirs.data}}/plex/Library/Application Support/Plex Media Server/Logs:/logs:ro"
+    restart_policy: always
+    networks:
+      - name: tierbox
+        aliases:
+          - tautulli
+    state: started

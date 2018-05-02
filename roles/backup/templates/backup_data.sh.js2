@@ -1,0 +1,128 @@
+#!/bin/bash
+# DO NOT MODIFY THIS SCRIPT
+#
+# IT WILL GET OVERWRITTEN THE NEXT TIME THE PLAYBOOK RUNS
+#
+#
+
+# Immediately exit script if a command fails
+set -e
+
+# Ensure tmp folder exists
+mkdir -p {{backup.tmp_path}}
+
+{% if backup.btrfs %}
+#############################
+# SNAPSHOT BTRFS VOLUME FOR #
+# A MORE CONSISTENT BACKUP  #
+#############################
+
+# Set our variables
+BTRFS_VOL={{backup.btrfs_vol_path}}
+DATA_PATH={{dirs.data}}
+SNAPSHOT_PATH=${BTRFS_VOL%/}/.snapshot_$(date +%Y-%m-%d_%H%M)
+SNAPSHOT_DATA_PATH=${SNAPSHOT_PATH%/}${DATA_PATH#${BTRFS_VOLUME}}
+
+# Error checking:
+# Verify is {{dirs.data}} is a subfolder of {{backup.btrfs_vol_path}}
+if [ -d ${BTRFS_VOL}${DATA_PATH#${BTRFS_VOL}} ]; then
+	btrfs subvolume snapshot -r ${BTRFS_VOL} $SNAPSHOT_PATH
+else
+	exit 1;
+fi
+{% else %}
+# Stop docker containers
+docker stop $(docker ps -a -q)
+{% endif %}
+
+# Create the backup archive
+printf "Backing up application data...\n\n"
+{% if backup.btrfs %}
+cd $SNAPSHOT_DATA_PATH
+{% else %}
+cd {{dirs.data}}
+{% endif %}
+for D in *;
+do
+	printf "####################################\n"
+	printf "Backing up {{dirs.data}}/$D\n"
+	printf "####################################\n\n"
+	printf "1) Creating backup_$D.tar.gz\n"
+	tar \
+		--exclude-from={{dirs.data}}/support_files/backup_exclude.txt \
+		--warning=no-file-changed \
+		-czf {{backup.tmp_path}}/backup_$D.tar.gz \
+		$D
+
+	printf "2) Generating md5sum of backup_$D.tar.gz\n"
+	md5sum {{backup.tmp_path}}/backup_$D.tar.gz > {{backup.tmp_path}}/backup_$D.tar.gz.md5
+
+	printf "3) Copying backup_$D.tar.gz and md5 to rclone remote: {{backup.rclone_dest}}/Days/$(date +%A)/$HOSTNAME\n"
+	/usr/bin/rclone copy \
+		--quiet \
+		--config {{dirs.data}}/rclone/rclone.conf \
+		--include backup_$D* \
+		{{backup.tmp_path}}/ \
+		{{backup.rclone_dest}}/Days/$(date +%A)/$HOSTNAME
+		
+	printf "4) cleaning up local $D backup archive files\n\n"
+	rm {{backup.tmp_path}}/backup_$D.tar.gz*
+done
+
+printf "Daily backup completed!\n\n"
+{% if pushover.use %}
+if [[ -f /usr/local/bin/pushover && -f /home/{{user}}/.pushoverrc ]]; then
+	/usr/local/bin/pushover --config /home/{{user}}/.pushoverrc "$HOSTNAME: Daily backup completed!"
+fi
+{% endif %}
+
+{% if backup.btrfs %}
+# Remove snapshot
+btrfs subvolume delete $SNAPSHOT_PATH
+{% else %}
+# Restart docker containers
+docker start $(docker ps -a -q)
+{% endif %}
+
+
+# Weekly backup on Sunday
+if [ $(date +%A) == "Sunday" ]; then
+	printf "###########################################################\n"
+	printf "It's Sunday, creating weekly backup for week $WEEK...\n"
+	printf "###########################################################\n\n"
+	printf "creating a copy of {{backup.rclone_dest}}/$HOSTNAME/Days/$(date +%A) into {{backup.rclone_dest}}/$HOSTNAME/Weeks/$(date +%W)\n\n"
+	/usr/bin/rclone copy \
+		--quiet \
+		--config {{dirs.data}}/rclone/rclone.conf \
+		{{backup.rclone_dest}}/Days/$(date +%A)/$HOSTNAME \
+		{{backup.rclone_dest}}/Weeks/$(date +%W)/$HOSTNAME
+	printf "Weekly backup completed!\n\n"
+
+{% if pushover.use %}
+	if [[ -f /usr/local/bin/pushover && -f /home/{{user}}/.pushoverrc ]]; then	
+		printf "Sending notification of completion of weekly backup.\n"
+		/usr/local/bin/pushover --config /home/{{user}}/.pushoverrc "$HOSTNAME: Weekly backup completed!"
+	fi
+{% endif %}
+fi
+
+# Monthly backup on 1st day of month
+if [ $(date +%d) -eq "01" ]; then
+	printf "###########################################################\n"
+	printf "It's the first of the month, keeping monthly backup...\n"
+	printf "###########################################################\n\n"
+	printf "creating a copy of {{backup.rclone_dest}}/$HOSTNAME/Days/$(date +%A) into {{backup.rclone_dest}}/$HOSTNAME/Months/$(date +%B)\n\n"
+
+	/usr/bin/rclone copy \
+		--quiet \
+		--config {{dirs.data}}/rclone/rclone.conf \
+		{{backup.rclone_dest}}/Days/$(date +%A)/$HOSTNAME \
+		{{backup.rclone_dest}}/Months/$(date +%B)/$HOSTNAME
+	printf "Monthly backup completed!\n\n"
+{% if pushover.use %}
+	if [[ -f /usr/local/bin/pushover && -f /home/{{user}}/.pushoverrc ]]; then
+		printf "Sending notification of completion of monthly backup.\n"
+		/usr/local/bin/pushover --config /home/{{user}}/.pushoverrc "$HOSTNAME: Monthly backup completed!"
+	fi
+{% endif %}
+fi

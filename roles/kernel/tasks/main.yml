@@ -1,0 +1,64 @@
+---
+- name: Message stopping playbook if kernel meets minimum version
+  debug: msg="System meets the minimum kernel version, exiting."
+  when: ansible_kernel is version('4.15', '>=')
+
+- name: Download kernel headers (all)
+  get_url:
+    url={{ kernel.headers_all_url }}
+    dest="/tmp/kernel_headers_all.deb"
+  when: ansible_kernel is version('4.15', '<')
+
+- name: Download kernel headers (generic)
+  get_url:
+    url={{ kernel.headers_generic_url }}
+    dest="/tmp/kernel_headers_generic.deb"
+  when: ansible_kernel is version('4.15', '<')
+
+- name: Download kernel image (generic)
+  get_url:
+    url={{ kernel.image_url }}
+    dest="/tmp/kernel_image.deb"
+  when: ansible_kernel is version('4.15', '<')
+
+- name: Upgrade kernel headers (all)
+  apt:
+    deb="/tmp/kernel_headers_all.deb" state=present
+  when: ansible_kernel is version('4.15', '<')
+
+- name: Upgrade kernel headers (generic)
+  apt:
+    deb="/tmp/kernel_headers_generic.deb" state=present
+  when: ansible_kernel is version('4.15', '<')
+
+- name: Upgrade kernel image
+  apt:
+    deb="/tmp/kernel_image.deb" state=present
+  when: ansible_kernel is version('4.15', '<')
+
+- name: Restart server
+  shell: 'sleep 1 && shutdown -r now "Reboot triggered by Ansible" && sleep 1'
+  async: 1
+  poll: 0
+  become: true
+  when: ansible_kernel is version('4.15', '<')
+
+- name: Wait for server to restart
+  local_action:
+    module: wait_for
+      host={{ inventory_hostname }}
+      port=22
+      delay=10
+  when: ansible_kernel is version('4.15', '<')
+
+- name: Get Facts
+  setup:
+  when: ansible_kernel is version('4.15', '<')
+
+- name: Ensure using kernel 4.15 or newer
+  fail: msg="Looks like kernel did not install properly. Manual intervention is likely required."
+  when: ansible_kernel is version('4.15', '<')
+
+- name: Message stopping playbook if kernel meets minimum version
+  debug: msg="System now using kernel {{ ansible_kernel }}."
+  when: ansible_kernel is version('4.15', '>=')

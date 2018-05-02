@@ -1,0 +1,25 @@
+---
+- name: Stop and remove any existing container
+  docker_container:
+    name: glances
+    state: absent
+
+- name: Create Glances container
+  docker_container:
+    name: glances
+    domainname: glances
+    image: "nicolargo/glances"
+    pull: yes
+    restart_policy: unless-stopped
+    network_mode: host
+    pid_mode: host
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    env:
+      TZ: "America/Toronto"
+      HOST_OS: "Ubuntu"
+      GLANCES_OPT: "-w"
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    state: started

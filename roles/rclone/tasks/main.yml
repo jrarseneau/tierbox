@@ -1,0 +1,205 @@
+---
+# rclone role
+- name: "Get {{user}} uid"
+  shell: "id -u {{user}}"
+  register: uid
+
+- name: "Get {{user}} gid"
+  shell: "id -g {{user}}"
+  register: gid
+
+- name: Create common rdirectories
+  file: "path={{item}} state=directory mode=0775 owner={{user}} group={{user}}"
+  with_items:
+    - "{{dirs.media}}"
+    - /home/{{user}}/.config/rclone
+
+- name: copy fuse.conf
+  copy: src=fuse.conf dest=/etc/fuse.conf force=yes
+
+- name: Ensure rclone folders exists
+  file: "path={{item}} state=directory mode=0775 owner={{user}} group={{user}} recurse=true"
+  with_items:
+    - "{{dirs.data}}/rclone"
+
+- name: Checksum existing rclone binary
+  stat:
+    path: /usr/bin/rclone
+  register: rclone_bin_start
+
+- name: Download rclone install script
+  get_url:
+    url:  https://rclone.org/install.sh
+    dest: /tmp/install.sh
+    mode: 0755
+    owner: root
+    group: root
+    force: yes
+    validate_certs: no
+
+- name: "Install latest rclone beta"
+  shell: "/tmp/install.sh beta"
+  register: rclone_beta_install
+  failed_when: "rclone_beta_install.rc != 0 and rclone_beta_install.rc !=3"
+  changed_when: "rclone_beta_install.rc == 0"
+  when: rclone.version == "beta"
+  
+
+- name: "Install latest rclone release"
+  shell: "/tmp/install.sh"
+  register: rclone_install
+  failed_when: "rclone_install.rc != 0 and rclone_install.rc !=3"
+  changed_when: "rclone_install.rc == 0"
+  when: 
+    - rclone.version == "latest" or rclone.version == ""
+
+- name: "Unarchive rclone v{{rclone.version}}"
+  unarchive:
+    src: https://github.com/ncw/rclone/releases/download/v{{ rclone.version }}/rclone-v{{ rclone.version }}-linux-amd64.zip
+    dest: /tmp
+    copy: no
+    validate_certs: no
+  when: 
+    - rclone.version != "latest" and rclone.version != ""
+
+- name: Copy binary to /usr/bin/rclone
+  copy:
+    src: "/tmp/rclone-v{{ rclone.version }}-linux-amd64/rclone"
+    dest: /usr/bin/rclone
+    mode: 0775
+    owner: root
+    group: root
+    remote_src: true
+  when: 
+    - rclone.version != "latest" and rclone.version != ""
+
+- name: Make dir for local manpages
+  file:
+    path: '/usr/local/share/man/man1'
+    state: directory
+    mode: 0755
+    owner: root
+    group: root
+  when: 
+    - rclone.version != "latest" and rclone.version != ""
+
+- name: Copy manpage
+  copy:
+    src: "/tmp/rclone-v{{ rclone.version }}-linux-amd64/rclone.1"
+    dest: /usr/local/share/man/man1/rclone.1
+    mode: 0644
+    owner: root
+    group: root
+    remote_src: true
+  when: 
+    - rclone.version != "latest" and rclone.version != ""
+
+- name: Install manpage
+  shell: mandb
+  changed_when: false
+  when: 
+    - rclone.version != "latest" and rclone.version != ""
+
+- name: Checksum potentially new rclone binary
+  stat:
+    path: /usr/bin/rclone
+  register: rclone_bin_end
+
+
+- name: Check restore rclone.conf exists
+  local_action: stat path="{{playbook_dir}}/rclone.conf"
+  register: restore_rclone_conf
+
+- name: Restore rclone.conf as part of restore process
+  copy:
+    src: "{{playbook_dir}}/rclone.conf"
+    dest: "{{dirs.data}}/rclone/rclone.conf"
+    mode: 0775
+    owner: "{{user}}"
+    group: "{{user}}"
+  register: rclone_conf_copy
+  when: restore_rclone_conf.stat.exists
+
+- name: Symlink rclone.conf to user folder
+  file:
+    src: "{{dirs.data}}/rclone/rclone.conf"
+    dest: "/home/{{user}}/.config/rclone/rclone.conf"
+    owner: "{{user}}"
+    group: "{{user}}"
+    state: link
+    force: true
+  when: restore_rclone_conf.stat.exists
+
+- name: Check service exists
+  stat:
+    path: "/etc/systemd/system/rclone.service"
+  register: rclone_service
+
+- name: Copy rclone.service systemd file
+  template:
+    src: rclone.service.js2
+    dest: /etc/systemd/system/rclone.service
+    owner: root
+    group: root
+    mode: 0644
+  when: not rclone_service.stat.exists
+
+- name: Copy rclone.service systemd file to /tmp for comparison with existing
+  template:
+    src: rclone.service.js2
+    dest: /tmp/rclone.service
+    owner: root
+    group: root
+    mode: 0644
+  when: rclone_service.stat.exists
+
+- name: Checksum existing rclone.service systemd file
+  stat:
+    path: /etc/systemd/system/rclone.service
+    get_checksum: yes
+  register: rclone_systemd_existing
+  when: rclone_service.stat.exists
+
+- name: Checksum new rclone.service systemd file
+  stat:
+    path: /tmp/rclone.service
+    get_checksum: yes
+  register: rclone_systemd_new
+  when: rclone_service.stat.exists
+  
+- name: Stop existing rclone service
+  systemd: state=stopped name=rclone
+  when: "(rclone_service.stat.exists) and (rclone_conf_copy.changed or rclone_systemd_existing.stat.checksum != rclone_systemd_new.stat.checksum or rclone_bin_start.stat.checksum != rclone_bin_end.stat.checksum)"
+
+- name: Copy new rclone.service systemd file
+  shell: "mv /tmp/rclone.service /etc/systemd/system/rclone.service"
+  when: "(rclone_service.stat.exists) and (rclone_systemd_existing.stat.checksum != rclone_systemd_new.stat.checksum)"  
+  
+- name: Systemd daemon-reload
+  systemd: state=stopped name=rclone daemon_reload=yes enabled=no
+  when: "(rclone_service.stat.exists) and (rclone_conf_copy.changed or rclone_systemd_existing.stat.checksum != rclone_systemd_new.stat.checksum or rclone_bin_start.stat.checksum != rclone_bin_end.stat.checksum)"
+  
+- name: Check config exists
+  stat:
+    path: "{{dirs.data}}/rclone/rclone.conf"
+  register: rclone_config
+
+- name: Start rclone service
+  systemd: state=started name=rclone enabled=yes
+  when: 
+    - rclone_config.stat.exists
+    - rclone_service.stat.exists
+    - "rclone_conf_copy.changed or rclone_systemd_existing.stat.checksum != rclone_systemd_new.stat.checksum or rclone_bin_start.stat.checksum != rclone_bin_end.stat.checksum"
+
+- name: Restart docker service
+  systemd: state=restarted name=docker enabled=yes
+  when: 
+    - rclone_config.stat.exists
+    - rclone_service.stat.exists
+    - "rclone_conf_copy.changed or rclone_systemd_existing.stat.checksum != rclone_systemd_new.stat.checksum or rclone_bin_start.stat.checksum != rclone_bin_end.stat.checksum"
+
+#- name: Remove restored rclone.conf
+#  file:
+#    path: "{{playbook_dir}}/rclone.conf"
+#    state: absent
+#  when: restore_rclone_conf.stat.exists

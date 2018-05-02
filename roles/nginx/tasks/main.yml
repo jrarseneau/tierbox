@@ -1,0 +1,114 @@
+---
+# Nginx role (for reverse proxy)
+- name: "Get {{user}} uid"
+  shell: "id -u {{user}}"
+  register: uid
+
+- name: "Get {{user}} gid"
+  shell: "id -g {{user}}"
+  register: gid
+
+- name: Stop and remove any existing container
+  docker_container:
+    name: nginx
+    state: absent
+
+- name: Create directories
+  file: "path={{item}} state=directory mode=0775 owner={{user}} group={{user}}"
+  with_items:
+    - "{{dirs.data}}/nginx"
+    - "{{dirs.data}}/nginx/conf.d"
+    - "{{dirs.data}}/nginx/html"
+    - "{{dirs.data}}/nginx/log"
+    - "{{dirs.data}}/acme"
+    - "{{dirs.data}}/acme/certs"
+    - "{{dirs.data}}/acme/certs/{{domain}}"
+    
+- name: Download acme.sh
+  git:
+    repo: 'https://github.com/Neilpang/acme.sh.git'
+    dest: /usr/src/acme.sh
+    depth: 1
+    update: yes
+
+- name: install acme.sh pre-reqs
+  package:
+    name: '{{ item }}'
+    state: present
+  with_items:
+    - socat
+
+- name: "Install acme.sh into {{dirs.data}}/acme"
+  shell: "/usr/src/acme.sh/acme.sh --install --home {{dirs.data}}/acme --certhome {{dirs.data}}/acme/certs --accountemail {{email}}"
+  become: true
+  become_user: "{{user}}"
+  args:
+    chdir: /usr/src/acme.sh
+    creates: '{{dirs.data}}/acme/acme.sh'    
+
+- name: Copy nginx.conf
+  copy:
+    src: "nginx.conf"
+    dest: "{{dirs.data}}/nginx/nginx.conf"
+    owner: "{{user}}"
+    group: "{{user}}"
+    mode: 0644
+
+- name: Copy nginx default site template
+  template:
+    src: "default.conf.js2"
+    dest: "{{dirs.data}}/nginx/conf.d/default.conf"
+    owner: "{{user}}"
+    group: "{{user}}"
+    mode: 0644
+    
+- name: "Generate Diffie-Hellman parameter file (this will take a long time)"
+  command: "/usr/bin/openssl dhparam -out '{{dirs.data}}/acme/certs/{{domain}}/dhparam.pem' 4096"
+  become: true
+  become_user: "{{user}}"
+  args:
+    creates: "{{dirs.data}}/acme/certs/{{domain}}/dhparam.pem"
+   
+- name: "Generate primary {{domain}} wildcard certificates"
+  shell: "{{dirs.data}}/acme/acme.sh --home {{dirs.data}}/acme --certhome {{dirs.data}}/acme/certs --issue -d {{domain}}  -d '*.{{domain}}'  --dns dns_cf"
+  become: true
+  become_user: "{{user}}"
+  args:
+    creates: "{{dirs.data}}/acme/certs/{{domain}}/{{domain}}.conf"
+  environment:
+    CF_Key: "{{cloudflare.apikey}}"
+    CF_Email: "{{cloudflare.email}}"
+  register: gen_certs
+  failed_when: "gen_certs.rc != 0 and gen_certs.rc !=2"
+
+- name: Create and start container
+  docker_container:
+    name: nginx
+    domainname: nginx
+    image: nginx
+    pull: yes
+    published_ports:
+      - "80:80/tcp"
+      - "443:443/tcp"
+    labels:
+      com.centurylinklabs.watchtower.enable: "false"
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "{{dirs.data}}/nginx/nginx.conf:/etc/nginx/nginx.conf:ro"
+      - "{{dirs.data}}/nginx/conf.d:/etc/nginx/conf.d:ro"
+      - "{{dirs.data}}/acme/certs:/etc/nginx/certs:ro"
+      - "{{dirs.data}}/nginx/html:/usr/share/nginx/html:ro"
+      - "{{dirs.data}}/nginx/log:/var/log/nginx"
+    restart_policy: always
+    networks:
+      - name: tierbox
+        aliases:
+          - nginx
+    state: started
+
+- name: Wait 10 seconds for container to start
+  wait_for: 
+    timeout: 10
+
+- name: Import nginx site-templates tasks
+  import_tasks: site-templates.yml

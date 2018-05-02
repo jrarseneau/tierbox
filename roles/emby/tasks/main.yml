@@ -1,0 +1,76 @@
+---
+# Emby role
+- name: "Get {{user}} uid"
+  shell: "id -u {{user}}"
+  register: uid
+
+- name: "Get {{user}} gid"
+  shell: "id -g {{user}}"
+  register: gid
+
+#- name: Create emby directories
+#  file: "path={{item}} state=directory mode=0775 owner={{user}} group={{user}}"
+#  with_items:
+#    - "{{plex.transcodes}}"
+
+- name: Stop and remove any existing container
+  docker_container:
+    name: emby
+    state: absent
+
+- name: Retrieve emby docker image
+  docker_image:
+    name: "emby/embyserver"
+
+#- name: Check Preferences.xml exists
+#  stat:
+#    path: "{{dirs.data}}/plex/Library/Application Support/Plex Media Server/Preferences.xml"
+#  register: plex_prefs
+
+#- name: Check /dev/dri exists
+#  stat:
+#    path: "/dev/dri"
+#  register: dev_dri
+
+#- name: Ask user for his plex server claim id
+#  pause:
+#    prompt: "To continue the plex installation, you must visit https://plex.tv/claim and retrieve a claim token, paste it below and press enter"
+#  register: plex_claim
+#  when: plex_prefs.stat.exists == False
+
+#- debug: msg="Using plex claim token {{plex_claim.user_input}}"
+#  when: plex_prefs.stat.exists == False
+
+- name: Create and start container
+  docker_container:
+    name: emby
+    domainname: emby
+    image: "emby/embyserver"
+    pull: yes
+    published_ports:
+      - "8096:8096/tcp"
+      - "8920:8920/tcp"
+      - "7359:7359/udp"
+      - "1900:1900/udp"
+    labels:
+      com.centurylinklabs.watchtower.enable: "false"
+    env:
+      UID: "{{uid.stdout}}"
+      GID: "{{gid.stdout}}"
+      VIRTUAL_HOST: "emby.{{domain}}"
+      LETSENCRYPT_HOST: "emby.{{domain}}"
+      LETSENCRYPT_EMAIL: "{{email}}"
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "{{dirs.data}}/emby:/config"
+      - "{{dirs.media}}:/media:ro"
+      - "{{dirs.media}}/recordings:/recordings:rw"
+      - "{{dirs.data}}/iptv-data:/iptv-data"
+      - "/tmp:/tmp"
+#    devices: "{{ '/dev/dri:/dev/dri' if dev_dri.stat.exists == True | default(false) else omit }}"
+    restart_policy: always
+    networks:
+      - name: tierbox
+        aliases:
+          - emby
+    state: started

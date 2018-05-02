@@ -1,0 +1,45 @@
+---
+# Ombi role
+- name: "Get {{user}} uid"
+  shell: "id -u {{user}}"
+  register: uid
+
+- name: "Get {{user}} gid"
+  shell: "id -g {{user}}"
+  register: gid
+
+- name: Stop and remove any existing container
+  docker_container:
+    name: ombi
+    state: absent
+
+- name: Create ombi directories
+  file: "path={{item}} state=directory mode=0775 owner={{user}} group={{user}}"
+  with_items:
+    - "{{dirs.data}}/ombi"
+
+- name: Create and start container
+  docker_container:
+    name: ombi
+    image: linuxserver/ombi
+    pull: yes
+    published_ports:
+      - "3579:3579/tcp"
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    env:
+      PUID: "{{uid.stdout}}"
+      PGID: "{{gid.stdout}}"
+      VIRTUAL_HOST: "{{ombi.domain}}"
+      VIRTUAL_PORT: 3579
+      LETSENCRYPT_HOST: "{{ombi.domain}}"
+      LETSENCRYPT_EMAIL: "{{email}}"
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "{{dirs.data}}/ombi:/config"
+    restart_policy: always
+    networks:
+      - name: tierbox
+        aliases:
+          - ombi
+    state: started

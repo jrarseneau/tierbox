@@ -1,0 +1,30 @@
+---
+- name: "Get {{user}} uid"
+  shell: "id -u {{user}}"
+  register: uid
+
+- name: "Get {{user}} gid"
+  shell: "id -g {{user}}"
+  register: gid
+
+- name: Stop and remove any existing container
+  docker_container:
+    name: watchtower
+    state: absent
+
+- name: Create container
+  docker_container:
+    name: watchtower
+    image: "v2tec/watchtower"
+    pull: yes
+    command: --label-enable --debug --cleanup --interval 3600
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - name: tierbox
+        aliases:
+          - watchtower
+    state: started

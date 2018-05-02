@@ -1,0 +1,46 @@
+---
+# IPTV role
+- name: "Get {{user}} uid"
+  shell: "id -u {{user}}"
+  register: uid
+
+- name: "Get {{user}} gid"
+  shell: "id -g {{user}}"
+  register: gid
+
+- name: Create common directories
+  file: "path={{item}} state=directory mode=0775 owner={{user}} group={{user}}"
+  with_items:
+   - "{{dirs.data}}"
+   - "{{dirs.data}}/iptv"
+   - "{{dirs.data}}/scripts"
+
+- name: Install required packages
+  apt: "name={{item}} state=present"
+  with_items:
+    - xmltv-util
+
+- name: copy xmltv episode name fixer script
+  copy:
+    src: tv_fix_eps.py
+    dest: /opt/scripts
+    owner: "{{user}}"
+    group: "{{user}}"
+    mode: 0755
+    force: yes
+
+- name: copy iptv-updater script template
+  template:
+    src: iptv-updater.sh.js2
+    dest: /opt/scripts/iptv-updater.sh
+    owner: "{{user}}"
+    group: "{{user}}"
+    mode: 0755
+
+- name: cron to update iptv xml epg and playlist
+  cron:
+    name: "Daily update of IPTV EPG and Playlist"
+    user: "{{user}}"
+    hour: "0"
+    minute: "15"
+    job: "/usr/bin/screen -dmS iptv-update {{dirs.data}}/scripts/iptv-updater.sh"

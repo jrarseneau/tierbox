@@ -1,0 +1,11 @@
+---
+- debug:
+    msg: "System is running {{ ansible_distribution }} {{ ansible_distribution_version }}"
+
+- name: Verify system is Ubuntu 16.04
+  fail: msg="This playbook is specifically designed for Ubuntu 16.04. Exiting."
+  when: ansible_distribution_version is version('16.04', '!=')
+
+- name: Verify a tag was provided
+  fail: msg="You must supply a tag, e.g. full/proxy/plex/feeder/web via the --tags option"
+  when: tags is not defined

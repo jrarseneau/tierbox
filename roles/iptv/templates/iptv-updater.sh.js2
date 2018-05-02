@@ -1,0 +1,91 @@
+#!/bin/bash
+#
+# This will download an IPTV playlist and EPG
+# It will then:
+#   * Remove 
+#
+PLAYLIST="{{iptv.playlist}}"
+EPG_PROVIDER="{{iptv.epg_provider}}"
+{% if iptv.epg_merge %}
+EPG_MERGE="{{iptv.epg_merge_provider}}"
+{% endif %}
+
+# Make temporary directory
+mkdir -p /tmp/iptv
+
+# Download the playlist & guide
+wget -O {{dirs.data}}/iptv/iptv.m3u \
+  --user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Safari/604.1.38" \
+  "$PLAYLIST"
+
+{% if iptv.epg_provider_gzip %}
+wget -O /tmp/iptv/epg.xml.gz \
+  --user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Safari/604.1.38" \
+  "$EPG_PROVIDER"
+{% else %}
+wget -O /tmp/iptv/epg.xml \
+  --user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Safari/604.1.38" \
+  "$EPG_PROVIDER"
+{% endif %}
+
+{% if iptv.epg_merge %}
+{% if iptv.epg_merge_provider_gzip %}
+wget -O /tmp/iptv/epg_merge.xml.gz \
+  --user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Safari/604.1.38" \
+  "$EPG_MERGE"
+{% else %}
+wget -O /tmp/iptv/epg_merge.xml \
+  --user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Safari/604.1.38" \
+  "$EPG_MERGE"
+{% endif %}
+{% endif %}
+
+
+# Replace .ts links with .m3u8 links
+# For Plex IPTV plugin
+sed -e 's/\.ts/\.m3u8/g' {{dirs.data}}/iptv/iptv.m3u > {{dirs.data}}/iptv/iptv.m3u8
+
+##########################
+# Prepare EPG XMLTV Data #
+##########################
+cd /tmp/iptv
+
+{% if iptv.epg_provider_gzip %}
+# gunzip iptv file
+gunzip -f epg.xml.gz
+{% endif %}
+{% if iptv.epg_merge_provider_gzip %}
+gunzip -f epg_merge.xml.gz
+{% endif %}
+
+# Use XMLTV `tv_sort` to sort both EPGs
+echo "Sorting EPGs by channel name..."
+/usr/bin/tv_sort --by-channel --output epg.sorted.xml epg.xml
+{% if iptv.epg_merge %}/usr/bin/tv_sort --by-channel --output epg_merge.sorted.xml epg_merge.xml{% endif %}
+
+{% if iptv.epg_merge %}
+#echo "Merging IPTV-EPG and Vaders EPG data..."
+# Use XMLTV `tv_merge` to merge both EPGs
+/usr/bin/tv_merge -q -i epg_merge.sorted.xml -m epg.sorted.xml -o xmltv-merged.xml
+{% endif %}
+
+echo "Fixing invalid xmltv_ns episode numbers..."
+# Use Stokkes' `tv_fix_eps` to fix malformed episode numbers
+{{dirs.data}}/scripts/tv_fix_eps.py -i xmltv-merged.xml -o {{dirs.data}}/iptv/xmltv.xml
+
+{% if iptv.share_remote %}
+# Share IPTV files (for use with 3rd party apps)
+/usr/bin/rclone copy {{dirs.data}}/iptv {{iptv.share_remote}}
+PLAYLIST_SHARE=$(/usr/bin/rclone link {{iptv.share_remote}}/iptv.m3u)
+EPG_SHARE=$(/usr/bin/rclone link {{iptv.share_remote}}/xmltv.xml)
+echo "IPTV Playlist Link: $PLAYLIST_SHARE" > {{dirs.data}}/iptv/iptv.txt
+echo "IPTV EPG Link: $EPG_SHARE" >> {{dirs.data}}/iptv/iptv.txt
+{% endif %}
+
+# Delete XML files in /tmp
+echo "Removing temporary files..."
+cd /
+rm -rf /tmp/iptv
+
+# Done
+echo "Done!"

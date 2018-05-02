@@ -1,0 +1,4 @@
+dependencies:
+    - { role: pre_install }
+    - { role: common }
+    - { role: system }

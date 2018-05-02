@@ -1,0 +1,25 @@
+---
+# Backup role
+- name: Copy backup script
+  template:
+    src: "backup_data.sh.js2"
+    dest: "{{dirs.data}}/scripts/backup_data.sh"
+    owner: "{{user}}"
+    group: "{{user}}"
+    mode: 0755
+
+- name: Copy backup exclude file
+  template:
+    src: "backup_exclude.txt.js2"
+    dest: "{{dirs.data}}/support_files/backup_exclude.txt"
+    owner: "{{user}}"
+    group: "{{user}}"
+    mode: 0644
+
+- name: Create backup cron on root user
+  cron:
+    name: "Daily backup of {{dirs.data}}"
+    user: root
+    hour: "{{backup.hour}}"
+    minute: "0"
+    job: "/usr/bin/screen -dmS backup {{dirs.data}}/scripts/backup_data.sh"

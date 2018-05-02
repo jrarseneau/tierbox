@@ -1,0 +1,3 @@
+[Default]
+api_token={{pushover.api_token}}
+user_key={{pushover.user_key}}

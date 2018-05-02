@@ -1,0 +1,74 @@
+---
+# Nginx nginx site-templates task list
+
+- name: Plex template
+  template:
+    src: "plex.conf.js2"
+    dest: "{{dirs.data}}/nginx/conf.d/plex.{{domain}}.conf"
+    owner: "{{user}}"
+    group: "{{user}}"
+    mode: 0644
+
+- name: Tautulli template
+  template:
+    src: "tautulli.conf.js2"
+    dest: "{{dirs.data}}/nginx/conf.d/tautulli.{{domain}}.conf"
+    owner: "{{user}}"
+    group: "{{user}}"
+    mode: 0644
+
+- name: NZBGet template
+  template:
+    src: "nzbget.conf.js2"
+    dest: "{{dirs.data}}/nginx/conf.d/nzbget.{{domain}}.conf"
+    owner: "{{user}}"
+    group: "{{user}}"
+    mode: 0644
+
+- name: ruTorrent template
+  template:
+    src: "rutorrent.conf.js2"
+    dest: "{{dirs.data}}/nginx/conf.d/rutorrent.{{domain}}.conf"
+    owner: "{{user}}"
+    group: "{{user}}"
+    mode: 0644
+
+- name: Sonarr template
+  template:
+    src: "sonarr.conf.js2"
+    dest: "{{dirs.data}}/nginx/conf.d/sonarr.{{domain}}.conf"
+    owner: "{{user}}"
+    group: "{{user}}"
+    mode: 0644
+
+- name: Radarr template
+  template:
+    src: "radarr.conf.js2"
+    dest: "{{dirs.data}}/nginx/conf.d/radarr.{{domain}}.conf"
+    owner: "{{user}}"
+    group: "{{user}}"
+    mode: 0644
+
+- name: NZBHydra template
+  template:
+    src: "hydra.conf.js2"
+    dest: "{{dirs.data}}/nginx/conf.d/hydra.{{domain}}.conf"
+    owner: "{{user}}"
+    group: "{{user}}"
+    mode: 0644
+
+- name: Glances template
+  template:
+    src: "glances.conf.js2"
+    dest: "{{dirs.data}}/nginx/conf.d/glances.{{domain}}.conf"
+    owner: "{{user}}"
+    group: "{{user}}"
+    mode: 0644
+
+- name: pfSense template
+  template:
+    src: "pfsense.conf.js2"
+    dest: "{{dirs.data}}/nginx/conf.d/pfsense.{{domain}}.conf"
+    owner: "{{user}}"
+    group: "{{user}}"
+    mode: 0644

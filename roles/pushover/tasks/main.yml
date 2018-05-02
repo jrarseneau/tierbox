@@ -1,0 +1,36 @@
+---
+# Pushover role
+- name: "Get {{user}} uid"
+  shell: "id -u {{user}}"
+  register: uid
+
+- name: "Get {{user}} gid"
+  shell: "id -g {{user}}"
+  register: gid
+
+- name: Install pushover pip module
+  pip: "name={{item}} state=latest executable=pip3"
+  with_items:
+    - python-pushover
+
+- name: Create pushover directories
+  file: "path={{item}} state=directory mode=0775 owner={{user}} group={{user}}"
+  with_items:
+    - "{{dirs.data}}/pushover"
+  
+- name: Create pushoverrc file
+  template:
+    src: pushoverrc.js2
+    dest: "{{dirs.data}}/pushover/pushoverrc"
+    owner: "{{user}}"
+    group: "{{user}}"
+    mode: 0644
+
+- name: create symlink for pushoverrc
+  file:
+    src: "{{dirs.data}}/pushover/pushoverrc"
+    dest: "/home/{{user}}/.pushoverrc"
+    owner: "{{user}}"
+    group: "{{user}}"
+    state: link
+    force: yes

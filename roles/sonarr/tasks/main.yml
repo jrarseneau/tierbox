@@ -1,0 +1,52 @@
+---
+# Sonarr role
+- name: "Get {{user}} uid"
+  shell: "id -u {{user}}"
+  register: uid
+
+- name: "Get {{user}} gid"
+  shell: "id -g {{user}}"
+  register: gid
+
+- name: Stop and remove any existing container
+  docker_container:
+    name: sonarr
+    state: absent
+
+- name: Create sonarr directories
+  file: "path={{item}} state=directory mode=0775 owner={{user}} group={{user}}"
+  with_items:
+    - "{{dirs.data}}/sonarr"
+
+- name: Create and start container
+  docker_container:
+    name: sonarr
+    image: "hotio/suitarr"
+    pull: yes
+    published_ports:
+      - "8989:8989/tcp"
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    env:
+      APP: "sonarr"
+      VERSION: "unstable"
+      BACKUP: "no"
+      PUID: "{{uid.stdout}}"
+      PGID: "{{gid.stdout}}"
+      MONO_TLS_PROVIDER: legacy
+      VIRTUAL_HOST: "sonarr.{{domain}}"
+      VIRTUAL_PORT: 8989
+      LETSENCRYPT_HOST: "sonarr.{{domain}}"
+      LETSENCRYPT_EMAIL: "{{email}}"
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "{{dirs.data}}/sonarr:/config"
+      - "{{dirs.media}}:/media"
+      - "{{dirs.downloads}}:/downloads"
+#       - "/opt/scripts:/scripts"
+    networks:
+      - name: tierbox
+        aliases:
+          - sonarr
+    restart_policy: always
+    state: started

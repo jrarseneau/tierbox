@@ -1,0 +1,21 @@
+---
+# Freespace-check role
+- name: Create directories
+  file: "path={{item}} state=directory mode=0775 owner={{user}} group={{user}}"
+  with_items:
+    - "{{dirs.data}}/scripts"
+  
+- name: Create freespace-check script
+  template:
+    src: freespace-check.sh.js2
+    dest: "{{dirs.data}}/scripts/freespace-check.sh"
+    owner: "{{user}}"
+    group: "{{user}}"
+    mode: 0755
+
+- name: Create cron job for freespace-check
+  cron:
+    name: "Freespace check"
+    user: "{{user}}"
+    minute: "{{freespace.cron_minute}}"
+    job: "/bin/bash -c {{dirs.data}}/scripts/freespace-check.sh"

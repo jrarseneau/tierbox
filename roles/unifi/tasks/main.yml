@@ -1,0 +1,52 @@
+---
+# UniFi Controller role
+- name: "Get {{user}} uid"
+  shell: "id -u {{user}}"
+  register: uid
+
+- name: "Get {{user}} gid"
+  shell: "id -g {{user}}"
+  register: gid
+
+- name: Stop and remove any existing container
+  docker_container:
+    name: unifi
+    state: absent
+
+- name: Create unifi directories
+  file: "path={{item}} state=directory mode=0775 owner={{user}} group={{user}}"
+  with_items:
+    - "{{dirs.data}}/unifi"
+
+- name: Create and start container
+  docker_container:
+    name: unifi
+    image: "linuxserver/unifi:unstable"
+    pull: yes
+    published_ports:
+      - "3478:3478/udp"
+      - "10001:10001/udp"
+      - "8080:8080/tcp"
+      - "8081:8081/tcp"
+      - "8443:8443/tcp"
+      - "8843:8843/tcp"
+      - "8880:8880/tcp"
+      - "6789:6789/tcp"
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    env:
+      PUID: "{{uid.stdout}}"
+      PGID: "{{gid.stdout}}"
+      
+      VIRTUAL_HOST: "unifi.{{domain}}"
+      LETSENCRYPT_HOST: "unifi.{{domain}}"
+      LETSENCRYPT_EMAIL: "{{email}}"
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "{{dirs.data}}/unifi:/config"
+    networks:
+      - name: tierbox
+        aliases:
+          - unifi
+    restart_policy: always
+    state: started
