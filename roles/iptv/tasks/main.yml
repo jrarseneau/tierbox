@@ -29,6 +29,24 @@
     mode: 0755
     force: yes
 
+- name: copy lcn channel mapping script
+  copy:
+    src: lcnmap.py
+    dest: /opt/scripts
+    owner: "{{user}}"
+    group: "{{user}}"
+    mode: 0755
+    force: yes
+
+- name: copy lcn channel mapping json map 
+  copy:
+    src: map.json
+    dest: /opt/scripts
+    owner: "{{user}}"
+    group: "{{user}}"
+    mode: 0644
+    force: yes
+
 - name: copy iptv-updater script template
   template:
     src: iptv-updater.sh.js2

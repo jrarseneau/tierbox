@@ -66,12 +66,20 @@ echo "Sorting EPGs by channel name..."
 {% if iptv.epg_merge %}
 #echo "Merging IPTV-EPG and Vaders EPG data..."
 # Use XMLTV `tv_merge` to merge both EPGs
-/usr/bin/tv_merge -q -i epg_merge.sorted.xml -m epg.sorted.xml -o xmltv-merged.xml
+/usr/bin/tv_merge -q -i epg_merge.sorted.xml -m epg.sorted.xml -o epg_merged.xml
 {% endif %}
 
 echo "Fixing invalid xmltv_ns episode numbers..."
 # Use Stokkes' `tv_fix_eps` to fix malformed episode numbers
-{{dirs.data}}/scripts/tv_fix_eps.py -i xmltv-merged.xml -o {{dirs.data}}/iptv/xmltv.xml
+{% if iptv.epg_merge %}
+{{dirs.data}}/scripts/tv_fix_eps.py -i epg_merged.xml -o epg_pre-mapped.xml
+{% else %}
+{{dirs.data}}/scripts/tv_fix_eps.py -i epg.sorted.xml -o epg_pre-mapped.xml
+{% endif %}
+
+echo "Adding LCN tag and mapping channels in EPG"
+# Use Stokkes 'lcnmap' to map channel numbers in EPG XML
+{{dirs.data}}/scripts/lcnmap.py -i epg_pre-mapped.xml -o {{dirs.data}}/iptv/epg.xml -m {{dirs.data}}/scripts/map.json
 
 {% if iptv.share_remote %}
 # Share IPTV files (for use with 3rd party apps)
