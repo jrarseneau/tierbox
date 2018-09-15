@@ -18,7 +18,7 @@ ExecStart=/usr/bin/rclone mount {{rclone.remote}} {{dirs.media}} \
    --dir-cache-time=1m \
    --cache-db-purge \
    --cache-chunk-size=10M \
-   --cache-total-chunk-size=50G \
+   --cache-total-chunk-size=10G \
    --cache-info-age=24h \
    --cache-workers=5 \
    --cache-tmp-upload-path {{rclone.cache_tmp_upload}} \
@@ -28,6 +28,7 @@ ExecStart=/usr/bin/rclone mount {{rclone.remote}} {{dirs.media}} \
    --rc \
    --syslog \
    --log-level INFO
+ExecStartPost=/bin/ls -laFhR {{dirs.media}}
 ExecStop=/bin/fusermount -uz {{dirs.media}}
 Restart=on-abort
 RestartSec=5
