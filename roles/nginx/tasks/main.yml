@@ -62,24 +62,37 @@
     group: "{{user}}"
     mode: 0644
     
-- name: "Generate Diffie-Hellman parameter file (this will take a long time)"
-  command: "/usr/bin/openssl dhparam -out '{{dirs.data}}/acme/certs/{{domain}}/dhparam.pem' 4096"
+# - name: "Generate Diffie-Hellman parameter file (this will take a long time)"
+#   command: "/usr/bin/openssl dhparam -out '{{dirs.data}}/acme/certs/dhparam.pem' 4096"
+#   become: true
+#   become_user: "{{user}}"
+#   args:
+#     creates: "{{dirs.data}}/acme/certs/{{domain}}/dhparam.pem"
+#    
+# - name: "Generate primary {{domain}} wildcard certificates"
+#   shell: "{{dirs.data}}/acme/acme.sh --home {{dirs.data}}/acme --certhome {{dirs.data}}/acme/certs --issue -d {{domain}}  -d '*.{{domain}}'  --dns dns_cf"
+#   become: true
+#   become_user: "{{user}}"
+#   args:
+#     creates: "{{dirs.data}}/acme/certs/{{domain}}/{{domain}}.conf"
+#   environment:
+#     CF_Key: "{{cloudflare.apikey}}"
+#     CF_Email: "{{cloudflare.email}}"
+#   register: gen_certs
+#   failed_when: "gen_certs.rc != 0 and gen_certs.rc !=2"
+
+- name: "Generate ombi {{ombi.domain}} certificate"
+  shell: "{{dirs.data}}/acme/acme.sh --home {{dirs.data}}/acme --certhome {{dirs.data}}/acme/certs --issue -d {{ombi.domain}} --dns dns_cf"
   become: true
   become_user: "{{user}}"
   args:
-    creates: "{{dirs.data}}/acme/certs/{{domain}}/dhparam.pem"
-   
-- name: "Generate primary {{domain}} wildcard certificates"
-  shell: "{{dirs.data}}/acme/acme.sh --home {{dirs.data}}/acme --certhome {{dirs.data}}/acme/certs --issue -d {{domain}}  -d '*.{{domain}}'  --dns dns_cf"
-  become: true
-  become_user: "{{user}}"
-  args:
-    creates: "{{dirs.data}}/acme/certs/{{domain}}/{{domain}}.conf"
+    creates: "{{dirs.data}}/acme/certs/{{ombi.domain}}/{{ombi.domain}}.conf"
   environment:
     CF_Key: "{{cloudflare.apikey}}"
     CF_Email: "{{cloudflare.email}}"
-  register: gen_certs
-  failed_when: "gen_certs.rc != 0 and gen_certs.rc !=2"
+  register: gen_certs_ombi
+  failed_when: "gen_certs_ombi.rc != 0 and gen_certs_ombi.rc !=2"
+  when: "'arseneau.ca' not in 'plexrequest.ca'"
 
 - name: Create and start container
   docker_container:
@@ -110,5 +123,5 @@
   wait_for: 
     timeout: 10
 
-- name: Import nginx site-templates tasks
+- name: Import nginx site-templates
   import_tasks: site-templates.yml

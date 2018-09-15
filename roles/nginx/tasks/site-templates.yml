@@ -1,5 +1,5 @@
 ---
-# Nginx nginx site-templates task list
+# Nginx site-templates task list
 
 - name: Plex template
   template:
