@@ -1,0 +1,16 @@
+---
+# WordPress role
+- name: "Get {{user}} uid"
+  shell: "id -u {{user}}"
+  register: uid
+
+- name: "Get {{user}} gid"
+  shell: "id -g {{user}}"
+  register: gid
+
+- name: Create WordPress directories
+  file: "path={{item}} state=directory mode=0775 owner={{user}} group={{user}}"
+  with_items:
+    - "{{dirs.data}}/wordpress"
+    
+- include_tasks: "theint.net.yml"

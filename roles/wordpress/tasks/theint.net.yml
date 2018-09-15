@@ -1,0 +1,124 @@
+---
+# theint.net wordpress site
+- name: "Get {{user}} uid"
+  shell: "id -u {{user}}"
+  register: uid
+
+- name: "Get {{user}} gid"
+  shell: "id -g {{user}}"
+  register: gid
+
+- name: "theint.net: Create WordPress directory"
+  file: "path={{item}} state=directory mode=0775 owner={{user}} group={{user}}"
+  with_items:
+    - "{{dirs.data}}/wordpress/theint.net"
+    
+- name: "theint.net: copy wordpress.vcl"
+  copy:
+    src: "theint_wordpress.vcl"
+    dest: "{{dirs.data}}/wordpress/theint.net/wordpress.vcl"
+    mode: 0775
+    owner: "{{user}}"
+    group: "{{user}}"
+
+- name: "theint.net: copy common.env template"
+  template:
+    src: "theint.common.env.js2"
+    dest: "{{dirs.data}}/wordpress/theint.net/common.env"
+    mode: 0600
+    owner: "{{user}}"
+    group: "{{user}}"
+    force: no
+
+- name: "theint.net: create and start varnish container"
+  docker_container:
+    name: ti_varnish
+    domainname: ti_varnish
+    image: "million12/varnish"
+    pull: yes
+    published_ports:
+      - "8041:80/tcp"
+    labels:
+      com.centurylinklabs.watchtower.enable: "false"
+    env:
+      VCL_CONFIG: "/wordpress.vcl"
+      VIRTUAL_HOST: "theint.net"
+      VIRTUAL_PORT: 80
+      LETSENCRYPT_HOST: "theint.net"
+      LETSENCRYPT_EMAIL: "{{email}}"
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "{{dirs.data}}/wordpress/theint.net/wordpress.vcl:/wordpress.vcl:ro"
+    restart_policy: always
+    networks:
+      - name: tierbox
+        aliases:
+          - ti_varnish
+    state: started
+ 
+- name: "theint.net: create and start MariaDB container"
+  docker_container:
+    name: ti_db
+    domainname: ti_db
+    image: "mariadb"
+    pull: yes
+    labels:
+      com.centurylinklabs.watchtower.enable: "false"
+    env_file: "{{dirs.data}}/wordpress/theint.net/common.env"
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "{{dirs.data}}/wordpress/theint.net/db:/var/lib/mysql"
+      - "{{dirs.data}}/wordpress/theint.net/prod/html:/var/www/html"
+    restart_policy: always
+    networks:
+      - name: tierbox
+        aliases:
+          - ti_db
+    state: started
+
+- name: "theint.net: create and start WordPress production container"
+  docker_container:
+    name: ti_prod
+    domainname: ti_prod
+    image: "wordpress"
+    pull: yes
+    labels:
+      com.centurylinklabs.watchtower.enable: "false"
+    env_file: "{{dirs.data}}/wordpress/theint.net/common.env"
+    env:
+      WORDPRESS_TABLE_PREFIX: "prd_"
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "{{dirs.data}}/wordpress/theint.net/prod:/var/www/html"
+    restart_policy: always
+    networks:
+      - name: tierbox
+        aliases:
+          - ti_prod
+    state: started
+
+- name: "theint.net: create and start WordPress development container"
+  docker_container:
+    name: ti_dev
+    domainname: ti_dev
+    image: "wordpress"
+    pull: yes
+    published_ports:
+     - "81:80/tcp"
+    labels:
+      com.centurylinklabs.watchtower.enable: "false"
+    env_file: "{{dirs.data}}/wordpress/theint.net/common.env"
+    env:
+      VIRTUAL_HOST: "sandb0x.theint.net"
+      LETSENCRYPT_HOST: "sandb0x.theint.net"
+      LETSENCRYPT_EMAIL: "{{email}}"
+      WORDPRESS_TABLE_PREFIX: "dev_"
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "{{dirs.data}}/wordpress/theint.net/dev:/var/www/html"
+    restart_policy: always
+    networks:
+      - name: tierbox
+        aliases:
+          - ti_dev
+    state: started
