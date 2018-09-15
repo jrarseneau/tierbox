@@ -21,19 +21,16 @@
 - name: Create and start container
   docker_container:
     name: sonarr
-    image: "hotio/suitarr"
+    image: "lsiodev/sonarr-preview"
     pull: yes
     published_ports:
       - "8989:8989/tcp"
     labels:
       com.centurylinklabs.watchtower.enable: "true"
     env:
-      APP: "sonarr"
-      VERSION: "unstable"
-      BACKUP: "no"
       PUID: "{{uid.stdout}}"
       PGID: "{{gid.stdout}}"
-      MONO_TLS_PROVIDER: legacy
+      TZ: "America/Toronto"
       VIRTUAL_HOST: "sonarr.{{domain}}"
       VIRTUAL_PORT: 8989
       LETSENCRYPT_HOST: "sonarr.{{domain}}"
@@ -41,7 +38,6 @@
     volumes:
       - "/etc/localtime:/etc/localtime:ro"
       - "{{dirs.data}}/sonarr:/config"
-      - "{{dirs.media}}:/media"
       - "{{dirs.downloads}}:/downloads"
       - "/mnt:/mnt"
     networks:
