@@ -7,7 +7,7 @@
   apt: "name={{item}} state=latest"
   with_items:
     - apt-utils
-    - cpufrequtils
+    #- cpufrequtils
 
 - name: Install open-vm-tools if on VMware
   apt: "name=open-vm-tools state=latest"
@@ -219,5 +219,5 @@
     line: 'ENABLE="true"'
     state: present
 
-- name: Disable ondemand CPU frequency scaling daemon
-  shell: "update-rc.d ondemand disable"
+#- name: Disable ondemand CPU frequency scaling daemon
+#  shell: "update-rc.d ondemand disable"
