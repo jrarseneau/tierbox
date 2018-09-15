@@ -24,17 +24,17 @@
     image: hotio/suitarr
     pull: yes
     published_ports:
-      - "5075:5075/tcp"
+      - "5075:5076/tcp"
     labels:
       com.centurylinklabs.watchtower.enable: "true"
     env:
-      APP: "nzbhydra"
-      VERSION: "unstable"
+      APP: "nzbhydra2"
+      VERSION: "stable"
       BACKUP: "no"
       PUID: "{{uid.stdout}}"
       PGID: "{{gid.stdout}}"
       VIRTUAL_HOST: "nzbhydra.{{domain}}"
-      VIRTUAL_PORT: 5075
+      VIRTUAL_PORT: 5076
       LETSENCRYPT_HOST: "nzbhydra.{{domain}}"
       LETSENCRYPT_EMAIL: "{{email}}"
     volumes:
