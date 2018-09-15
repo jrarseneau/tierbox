@@ -8,10 +8,10 @@
   shell: "id -g {{user}}"
   register: gid
 
-#- name: Create emby directories
-#  file: "path={{item}} state=directory mode=0775 owner={{user}} group={{user}}"
-#  with_items:
-#    - "{{plex.transcodes}}"
+- name: Create emby directories
+  file: "path={{item}} state=directory mode=0775 owner={{user}} group={{user}}"
+  with_items:
+    - "{{emby.recordings}}"
 
 - name: Stop and remove any existing container
   docker_container:
@@ -64,9 +64,11 @@
       - "/etc/localtime:/etc/localtime:ro"
       - "{{dirs.data}}/emby:/config"
       - "{{dirs.media}}:/media:ro"
-      - "{{dirs.media}}/recordings:/recordings:rw"
+      - "{{emby.recordings}}:/recordings:rw"
+      - "{{emby.transcodes}}:/transcodes:rw"
       - "{{dirs.data}}/iptv:/iptv"
       - "/tmp:/tmp"
+      - "/mnt:/mnt:ro"
 #    devices: "{{ '/dev/dri:/dev/dri' if dev_dri.stat.exists == True | default(false) else omit }}"
     restart_policy: always
     networks:
@@ -74,3 +76,10 @@
         aliases:
           - emby
     state: started
+    
+- name: Create recordings upload cron job
+  cron:
+    name: "Hourly recordings upload"
+    user: "{{user}}"
+    minute: "{{emby.cron.minute}}"
+    job: "/usr/bin/screen -dmS rec-upload /usr/bin/rclone move {{emby.recordings}} {{emby.cron.remote}} --min-age=60m --syslog --log-level INFO"
