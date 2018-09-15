@@ -15,15 +15,14 @@ Group={{user}}
 ExecStart=/usr/bin/rclone mount {{rclone.remote}} {{dirs.media}} \
    --allow-other \
    --allow-non-empty \
-   --dir-cache-time=1m \
-   --cache-db-purge \
-   --cache-chunk-size=10M \
-   --cache-total-chunk-size=10G \
-   --cache-info-age=24h \
-   --cache-workers=5 \
-   --cache-tmp-upload-path {{rclone.cache_tmp_upload}} \
-   --cache-tmp-wait-time {{rclone.upload_interval}} \
-   --cache-db-path {{rclone.cache_path}} \
+   --dir-cache-time=72h \
+   --tpslimit=10 \
+   --tpslimit-burst=10 \
+   --buffer-size=100M \
+   --vfs-read-chunk-size=128M \
+   --vfs-read-chunk-size-limit off \
+   --vfs-cache-max-age=5m \
+   --vfs-cache-mode writes \
    --umask 002 \
    --rc \
    --syslog \
