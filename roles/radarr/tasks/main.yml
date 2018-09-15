@@ -43,6 +43,7 @@
       - "{{dirs.data}}/radarr:/config"
       - "{{dirs.media}}:/media"
       - "{{dirs.downloads}}:/downloads"
+      - "/mnt:/mnt"
     networks:
       - name: tierbox
         aliases:
