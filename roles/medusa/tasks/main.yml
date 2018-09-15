@@ -1,0 +1,47 @@
+---
+# Medusa role
+- name: "Get {{user}} uid"
+  shell: "id -u {{user}}"
+  register: uid
+
+- name: "Get {{user}} gid"
+  shell: "id -g {{user}}"
+  register: gid
+
+- name: Stop and remove any existing container
+  docker_container:
+    name: medusa
+    state: absent
+
+- name: Create medusa directories
+  file: "path={{item}} state=directory mode=0775 owner={{user}} group={{user}}"
+  with_items:
+    - "{{dirs.data}}/medusa"
+
+- name: Create and start container
+  docker_container:
+    name: medusa
+    image: "linuxserver/medusa"
+    pull: yes
+    published_ports:
+      - "8081:8081/tcp"
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    env:
+      PUID: "{{uid.stdout}}"
+      PGID: "{{gid.stdout}}"
+      VIRTUAL_HOST: "medusa.{{domain}}"
+      VIRTUAL_PORT: 8081
+      LETSENCRYPT_HOST: "medusa.{{domain}}"
+      LETSENCRYPT_EMAIL: "{{email}}"
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "{{dirs.data}}/medusa:/config"
+      - "{{dirs.downloads}}:/downloads"
+      - "/mnt:/mnt"
+    networks:
+      - name: tierbox
+        aliases:
+          - medusa
+    restart_policy: always
+    state: started
