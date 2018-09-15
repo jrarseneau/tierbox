@@ -10,7 +10,7 @@
 - name: Install common packages
   apt: "name={{item}} state=present"
   with_items:
-    - unrar
+#    - unrar
     - unzip
     - p7zip
     - python-pip
