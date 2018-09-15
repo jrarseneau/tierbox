@@ -43,7 +43,7 @@
       - "{{dirs.data}}/sonarr:/config"
       - "{{dirs.media}}:/media"
       - "{{dirs.downloads}}:/downloads"
-#       - "/opt/scripts:/scripts"
+      - "/mnt:/mnt"
     networks:
       - name: tierbox
         aliases:
