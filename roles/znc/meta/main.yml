@@ -1,2 +1,5 @@
 dependencies:
+    - { role: pre_install }
+    - { role: system }
+    - { role: common }
     - { role: docker }
