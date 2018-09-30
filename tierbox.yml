@@ -14,23 +14,20 @@
     - { role: pushover, tags: ['full', 'proxy', 'feeder', 'plex', 'emby', 'wordpress', 'update-pushover']}
     - { role: docker, tags: ['full', 'proxy', 'feeder', 'plex', 'emby', 'wordpress', 'update-docker'] }
     - { role: rclone, tags: ['full', 'feeder', 'plex', 'emby', 'update-rclone'] }
-    - { role: nginx, tags: ['proxy', 'proxy-test']}
+    - { role: caddy, tags: ['proxy', 'caddy'] }
     - { role: plex, tags: ['full', 'plex', 'update-plex'] }
-    - { role: emby, tags: ['emby', 'update-emby'] }
     - { role: tautulli, tags: ['full', 'plex', 'update-tautulli'] }
     - { role: nzbget, tags: ['full', 'feeder', 'update-nzbget'] }
     - { role: rutorrent, tags: ['full', 'feeder', 'update-rutorrent'] }
     - { role: hydra, tags: ['full', 'feeder', 'update-nzbhydra'] }
     - { role: sonarr, tags: ['full', 'feeder', 'update-sonarr'] }
-    - { role: medusa, tags: ['update-medusa'] }
     - { role: radarr, tags: ['full', 'feeder', 'update-radarr'] }
     - { role: ombi, tags: ['full', 'feeder'] }
     - { role: unifi, tags: ['unifi'] }
     - { role: znc, tags: ['znc'] }
-    - { role: iptv, tags: ['iptv']}
     - { role: telly, tags: ['telly', 'update-telly'] }
     - { role: wordpress, tags: ['full', 'wordpress', 'update-wordpress'] }
-    - { role: backup, tags: ['full', 'proxy', 'feeder', 'plex', 'emby', 'backup'] }
+    - { role: backup, tags: ['full', 'feeder', 'plex', 'emby', 'backup'] }
     - { role: freespace, tags: ['full', 'proxy', 'feeder', 'plex', 'emby', 'backup', 'freespace'] }
     - { role: watchtower, tags: ['update-watchtower'] }
     - { role: glances, tags: ['update-glances'] }
