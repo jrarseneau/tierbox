@@ -78,7 +78,6 @@
       - "{{dirs.data}}/plex:/config"
       - "{{plex.transcodes}}:/transcode"
       - "{{dirs.media}}:/media"
-      - "{{dirs.data}}/iptv:/iptv"
       - "/tmp:/tmp"
       - "/mnt:/mnt"
     devices: "{{ '/dev/dri:/dev/dri' if dev_dri.stat.exists == True | default(false) else omit }}"
