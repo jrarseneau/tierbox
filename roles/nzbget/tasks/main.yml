@@ -36,16 +36,14 @@
 - name: Create and start container
   docker_container:
     name: nzbget
-    image: "hotio/suitarr:nzbget"
+    image: "linuxserver/nzbget"
     pull: yes
     published_ports:
       - "6789:6789/tcp"
     labels:
       com.centurylinklabs.watchtower.enable: "true"
     env:
-      APP: "nzbget"
-      VERSION: "stable"
-      BACKUP: "no"
+      TZ: "America/Toronto"
       PUID: "{{uid.stdout}}"
       PGID: "{{gid.stdout}}"
       VIRTUAL_HOST: "nzbget.{{domain}}"
