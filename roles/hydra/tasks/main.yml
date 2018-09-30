@@ -20,17 +20,15 @@
 
 - name: Create and start container
   docker_container:
-    name: nzbhydra
-    image: hotio/suitarr
+    name: hydra
+    image: "linuxserver/hydra2"
     pull: yes
     published_ports:
-      - "5075:5076/tcp"
+      - "5076:5076/tcp"
     labels:
       com.centurylinklabs.watchtower.enable: "true"
     env:
-      APP: "nzbhydra2"
-      VERSION: "stable"
-      BACKUP: "no"
+      TZ: "America/Toronto"
       PUID: "{{uid.stdout}}"
       PGID: "{{gid.stdout}}"
       VIRTUAL_HOST: "nzbhydra.{{domain}}"
