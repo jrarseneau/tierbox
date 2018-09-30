@@ -9,7 +9,7 @@ THRESHOLD={{freespace.threshold}}
 printf "$HOSTNAME: checking freespace on local disks\n"
 
 # Enumerate local disks
-disks=$(df -h | egrep '^/dev' | awk 'NF=6{print $1,$6,$5}' | awk '!x[$1]++' | sort)
+disks=$(df -h --type btrfs --type ext4 --type ext3 --type ext2 --type vfat --type nfs --type xfs | egrep '^/dev' | awk 'NF=6{print $1,$6,$5}' | awk '!x[$1]++' | sort)
 
 # Check and trigger notification if space left > THRESHOLD
 while read -r line; do
