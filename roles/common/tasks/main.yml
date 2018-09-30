@@ -38,7 +38,8 @@
 - name: Install common pip modules
   pip: "name={{item}} state=latest executable=pip3"
   with_items:
-    - docker-py
+    - docker
+    - docker-compose
     - ansible-toolbox
 
 
