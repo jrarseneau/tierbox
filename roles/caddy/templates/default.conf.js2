@@ -1,0 +1,27 @@
+{{caddy_dns}} {
+	gzip
+	log {{dirs.data}}/caddy/logs/{{caddy_dns}}_access.log
+	errors {{dirs.data}}/caddy/logs/{{caddy_dns}}_errors.log
+	proxy / {{caddy_host}}:{{caddy_port}} { 
+		transparent 
+	}
+{% if cloudflare.apikey %}
+	tls { 
+		dns cloudflare
+	}
+{% endif %}
+{% if caddy.jwt.use %}
+	jwt {
+		path /
+		except /favicon.ico
+		redirect /jwt?backTo={rewrite_uri}
+		allow email {{email}}
+ 	}
+	login {
+		login_path /jwt
+		google client_id={{caddy.jwt.client_id}},client_secret={{caddy.jwt.client_secret}},scope=https://www.googleapis.com/auth/userinfo.email
+		jwt_expiry {{caddy.jwt.jwt_expiry}}
+        cookie_expiry {{caddy.jwt.cookie_expiry}}
+	}
+{% endif %}
+}

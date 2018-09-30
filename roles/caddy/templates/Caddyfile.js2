@@ -1,0 +1,7 @@
+# Caddyfile
+
+# General errors logged to this
+#errors {{dirs.data}}/caddy/logs/caddy_errors.log
+
+# Import site configurations
+import {{dirs.data}}/caddy/conf/*.conf

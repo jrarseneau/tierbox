@@ -1,0 +1,18 @@
+{{caddy_dns}} {
+	gzip
+	timeouts 1h
+	log {{dirs.data}}/caddy/logs/{{caddy_dns}}_access.log
+	errors {{dirs.data}}/caddy/logs/{{caddy_dns}}_errors.log
+
+	proxy / {{caddy_host}}:{{caddy_port}} {
+		transparent
+		websocket
+		keepalive 12
+		timeout 1h
+	}
+{% if cloudflare.apikey %}
+	tls { 
+		dns cloudflare
+	}
+{% endif %}
+}

@@ -1,0 +1,13 @@
+{{caddy_dns}} {
+	gzip
+	log {{dirs.data}}/caddy/logs/{{caddy_dns}}_access.log
+	errors {{dirs.data}}/caddy/logs/{{caddy_dns}}_errors.log
+	proxy / {{caddy_host}}:{{caddy_port}} { 
+		transparent 
+	}
+{% if cloudflare.apikey %}
+	tls { 
+		dns cloudflare
+	}
+{% endif %}
+}
