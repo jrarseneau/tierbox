@@ -9,12 +9,13 @@
     - { role: sanity_check }
     - { role: kernel, tags: ['kernel'] }
     - { role: pre_install, tags: ['full', 'proxy', 'feeder', 'plex', 'emby', 'wordpress'] }
-    - { role: system, tags: ['full', 'proxy', 'feeder', 'plex', 'emby', 'wordpress'] }
+    - { role: system, tags: ['full', 'proxy', 'feeder', 'plex', 'emby', 'wordpress', 'system'] }
     - { role: common, tags: ['full', 'proxy', 'feeder', 'plex', 'emby', 'wordpress'] }
     - { role: pushover, tags: ['full', 'proxy', 'feeder', 'plex', 'emby', 'wordpress', 'update-pushover']}
     - { role: docker, tags: ['full', 'proxy', 'feeder', 'plex', 'emby', 'wordpress', 'update-docker'] }
     - { role: rclone, tags: ['full', 'feeder', 'plex', 'emby', 'update-rclone'] }
     - { role: caddy, tags: ['proxy', 'caddy'] }
+    - { role: emby, tags: ['emby', 'emby-standalone'] }
     - { role: plex, tags: ['full', 'plex', 'update-plex'] }
     - { role: tautulli, tags: ['full', 'plex', 'update-tautulli'] }
     - { role: nzbget, tags: ['full', 'feeder', 'update-nzbget'] }
@@ -23,8 +24,8 @@
     - { role: sonarr, tags: ['full', 'feeder', 'update-sonarr'] }
     - { role: radarr, tags: ['full', 'feeder', 'update-radarr'] }
     - { role: ombi, tags: ['full', 'feeder'] }
-    - { role: unifi, tags: ['unifi'] }
     - { role: znc, tags: ['znc'] }
+    - { role: drive_strm, tags: ['strm'] }
     - { role: telly, tags: ['telly', 'update-telly'] }
     - { role: wordpress, tags: ['full', 'wordpress', 'update-wordpress'] }
     - { role: backup, tags: ['full', 'feeder', 'plex', 'emby', 'backup'] }
