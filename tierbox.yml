@@ -25,7 +25,7 @@
     - { role: radarr, tags: ['full', 'feeder', 'update-radarr'] }
     - { role: ombi, tags: ['full', 'feeder'] }
     - { role: znc, tags: ['znc'] }
-    - { role: drive_strm, tags: ['strm'] }
+    - { role: drive_strm, tags: ['drive_strm'] }
     - { role: telly, tags: ['telly', 'update-telly'] }
     - { role: wordpress, tags: ['full', 'wordpress', 'update-wordpress'] }
     - { role: backup, tags: ['full', 'feeder', 'plex', 'emby', 'backup'] }
