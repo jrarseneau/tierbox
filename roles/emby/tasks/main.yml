@@ -8,10 +8,15 @@
   shell: "id -g {{user}}"
   register: gid
 
-- name: Create emby directories
-  file: "path={{item}} state=directory mode=0775 owner={{user}} group={{user}}"
-  with_items:
-    - "{{emby.recordings}}"
+#- name: Create emby directories
+#  file: "path={{item}} state=directory mode=0775 owner={{user}} group={{user}}"
+#  with_items:
+#    - "{{emby.recordings}}"
+
+- name: "Check if 'system.xml' exists"
+  stat:
+    path: "{{dirs.data}}/emby/config/system.xml"
+  register: emby_system_xml
 
 - name: Stop and remove any existing container
   docker_container:
@@ -45,13 +50,10 @@
   docker_container:
     name: emby
     domainname: emby
-    image: "emby/embyserver"
+    image: "emby/embyserver:beta"
     pull: yes
     published_ports:
       - "8096:8096/tcp"
-      - "8920:8920/tcp"
-      - "7359:7359/udp"
-      - "1900:1900/udp"
     labels:
       com.centurylinklabs.watchtower.enable: "false"
     env:
@@ -64,8 +66,8 @@
       - "/etc/localtime:/etc/localtime:ro"
       - "{{dirs.data}}/emby:/config"
       - "{{dirs.media}}:/media:ro"
-      - "{{emby.recordings}}:/recordings:rw"
-      - "{{emby.transcodes}}:/transcodes:rw"
+#      - "{{emby.recordings}}:/recordings:rw"
+#      - "{{emby.transcodes}}:/transcodes:rw"
       - "/tmp:/tmp"
       - "/mnt:/mnt:ro"
 #    devices: "{{ '/dev/dri:/dev/dri' if dev_dri.stat.exists == True | default(false) else omit }}"
@@ -76,9 +78,17 @@
           - emby
     state: started
     
-- name: Create recordings upload cron job
-  cron:
-    name: "Hourly recordings upload"
-    user: "{{user}}"
-    minute: "{{emby.cron.minute}}"
-    job: "/usr/bin/screen -dmS rec-upload /usr/bin/rclone move {{emby.recordings}} {{emby.cron.remote}} --min-age=60m --syslog --log-level INFO"
+#- name: Create recordings upload cron job
+# cron:
+#    name: "Hourly recordings upload"
+#    user: "{{user}}"
+#    minute: "{{emby.cron.minute}}"
+#    job: "/usr/bin/screen -dmS rec-upload /usr/bin/rclone move {{emby.recordings}} {{emby.cron.remote}} --min-age=60m --syslog --log-level INFO"
+
+#- name: Settings Tasks
+#  include_tasks: "roles/emby/tasks/emby_settings.yml"
+#  when: not (
+#        (emby_system_xml.exists)
+#        or
+#        (continuous_integration)
+#    )
